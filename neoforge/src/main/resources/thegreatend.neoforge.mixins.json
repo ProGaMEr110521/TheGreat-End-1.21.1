@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.progamer110521.thegreatend.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "client": [
+    "MixinWinScreen"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "vpoem_ru_ru": {
+    "sounds": [
+      {
+        "name": "thegreatend:vpoem_ru_ru",
+        "stream": true
+      }
+    ]
+  }
+}
