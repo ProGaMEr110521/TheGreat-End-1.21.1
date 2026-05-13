@@ -1,11 +1,12 @@
 package com.progamer110521.thegreatend.mixin;
 
+import com.progamer110521.thegreatend.Constants;
 import com.progamer110521.thegreatend.ModSounds;
-import it.unimi.dsi.fastutil.ints.IntSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.WinScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,35 +18,33 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(WinScreen.class)
 public abstract class MixinWinScreen {
 
-    @Unique
-    private boolean theGreat_End_1_20_1$hasStartedPlaying = false;
+    @Shadow
+    private float scroll;
+
+    @Shadow
+    private float scrollSpeed;
 
     @Unique
-    private static String theGreat_End_1_20_1$minecraftLanguage = "temp";
-
-//    @Shadow
-//    private float scroll;
-//
-//    @Shadow
-//    private float scrollSpeed;
-//
-//    @Redirect(
-//            method = "render",
-//            at = @At(
-//                    value = "INVOKE",
-//                    target = "Ljava/lang/Math;max(FF)F"
-//            )
-//    )
-//    private float fixScrollCalculation(float a, float b) {
-
-//        float fixedMultiplier = 0.12f;
-//        return Math.max(0.0F, this.scroll + fixedMultiplier * this.scrollSpeed);
-//    }
+    private boolean theGreat_End_1_21_1$hasStartedPlaying = false;
 
     @Unique
-    private void theGreat_End_1_20_1$getUserLanguage() {
-        Minecraft minecraft = Minecraft.getInstance();
-        theGreat_End_1_20_1$minecraftLanguage = minecraft.options.languageCode;
+    private final Minecraft theGreat_End_1_21_1$minecraft = Minecraft.getInstance();
+
+    @Unique
+    private int theGreat_End_1_21_1$maxClientFramerate = 0;
+
+    @Unique
+    private boolean theGreat_End_1_21_1$InitiallyTurnedOnVsync;
+
+    @Unique
+    private static String theGreat_End_1_21_1$minecraftLanguage = "temp";
+
+    @Unique
+    private static final float theGreat_End_1_21_1$FIXED_SCROLL_DELTA = 0.5f;
+
+    @Unique
+    private void theGreat_End_1_21_1$getUserLanguage() {
+        theGreat_End_1_21_1$minecraftLanguage = theGreat_End_1_21_1$minecraft.options.languageCode;
     }
 
     @ModifyArg(method = "init",
@@ -53,44 +52,82 @@ public abstract class MixinWinScreen {
                     target = "Lnet/minecraft/client/gui/screens/WinScreen;wrapCreditsIO(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/client/gui/screens/WinScreen$CreditsReader;)V"),
             index = 0)
     private ResourceLocation modifyEndTextPath(ResourceLocation originalPath) {
-        theGreat_End_1_20_1$getUserLanguage();
+        theGreat_End_1_21_1$getUserLanguage();
 
         if (originalPath.equals(ResourceLocation.withDefaultNamespace("texts/end.txt"))) {
-            if (theGreat_End_1_20_1$minecraftLanguage.equals("ru_ru")) {
+            if (theGreat_End_1_21_1$minecraftLanguage.equals("ru_ru")) {
                 return ResourceLocation.fromNamespaceAndPath("thegreatend", "texts/poem_ru_ru.txt");
             }
         }
         return originalPath;
     }
 
-    @Inject(method = "init", at = @At("TAIL"))
-    private void onInit(CallbackInfo ci) {
-        theGreat_End_1_20_1$getUserLanguage();
+    @Redirect(
+            method = "render",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Ljava/lang/Math;max(FF)F"
+            )
+    )
+    private float redirectScrollMax(float a, float b) {
+        float fixedScroll = this.scroll + theGreat_End_1_21_1$FIXED_SCROLL_DELTA * this.scrollSpeed;
+        return Math.max(a, fixedScroll);
+    }
 
-        if (!theGreat_End_1_20_1$hasStartedPlaying) {
-            theGreat_End_1_20_1$playEndPoemSound();
-            theGreat_End_1_20_1$hasStartedPlaying = true;
+//    @Inject(method = "render", at = @At("TAIL"))
+//    private void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+//        Constants.LOG.info("Current FPS: {}, VSync: {}", theGreat_End_1_21_1$minecraft.getFps(), theGreat_End_1_21_1$InitiallyTurnedOnVsync);
+//    }
+
+    @Inject(method = "init", at = @At("HEAD"))
+    private void onInit(CallbackInfo ci) {
+        theGreat_End_1_21_1$maxClientFramerate = theGreat_End_1_21_1$minecraft.options.framerateLimit().get();
+        theGreat_End_1_21_1$InitiallyTurnedOnVsync = theGreat_End_1_21_1$minecraft.options.enableVsync().get();
+
+        Constants.LOG.info("theGreat_End_1_21_1$maxClientFramerate = {}; theGreat_End_1_21_1$InitiallyTurnedOnVsync = {}", theGreat_End_1_21_1$maxClientFramerate, theGreat_End_1_21_1$InitiallyTurnedOnVsync);
+
+        if (theGreat_End_1_21_1$InitiallyTurnedOnVsync) {
+            theGreat_End_1_21_1$minecraft.options.enableVsync().set(false);
+        }
+
+        theGreat_End_1_21_1$minecraft.options.framerateLimit().set(45);
+
+        theGreat_End_1_21_1$getUserLanguage();
+
+        if (!theGreat_End_1_21_1$hasStartedPlaying) {
+            theGreat_End_1_21_1$playEndPoemSound();
+            theGreat_End_1_21_1$hasStartedPlaying = true;
         }
     }
 
     @Inject(method = "onClose", at = @At("HEAD"))
     private void onClose(CallbackInfo ci) {
-        theGreat_End_1_20_1$stopEndPoemSound();
+        theGreat_End_1_21_1$stopEndPoemSound();
+
+        if (theGreat_End_1_21_1$InitiallyTurnedOnVsync) {
+            theGreat_End_1_21_1$minecraft.options.enableVsync().set(true);
+        }
+
+        theGreat_End_1_21_1$minecraft.options.framerateLimit().set(theGreat_End_1_21_1$maxClientFramerate);
+
+        Constants.LOG.info("Set VSync to {} and max framerate to {}", theGreat_End_1_21_1$InitiallyTurnedOnVsync, theGreat_End_1_21_1$maxClientFramerate);
+
+        if (theGreat_End_1_21_1$minecraft.options.framerateLimit().get() == 45 || theGreat_End_1_21_1$minecraft.options.framerateLimit().get() == 40) {
+            if (theGreat_End_1_21_1$minecraft.player != null) theGreat_End_1_21_1$minecraft.player.sendSystemMessage(Component.translatable("thegreatend.message.framerate_change_error"));
+        }
     }
 
     @Unique
-    private void theGreat_End_1_20_1$playEndPoemSound() {
-        Minecraft minecraft = Minecraft.getInstance();
-        ResourceLocation voiceoverLocalization = ModSounds.getVoiceoverLocalization(theGreat_End_1_20_1$minecraftLanguage);
+    private void theGreat_End_1_21_1$playEndPoemSound() {
+        ResourceLocation voiceoverLocalization = ModSounds.getVoiceoverLocalization(theGreat_End_1_21_1$minecraftLanguage);
 
         if (voiceoverLocalization != null) {
-
-            minecraft.getSoundManager().play(new SimpleSoundInstance(
+            theGreat_End_1_21_1$minecraft.getSoundManager().play(new SimpleSoundInstance(
                             voiceoverLocalization,
                             SoundSource.VOICE,
                             1.0F,
                             1.0F,
-                            minecraft.level.getRandom(),
+                            theGreat_End_1_21_1$minecraft.level.getRandom(),
                             false,
                             0,
                             SimpleSoundInstance.Attenuation.NONE,
@@ -102,8 +139,7 @@ public abstract class MixinWinScreen {
     }
 
     @Unique
-    private void theGreat_End_1_20_1$stopEndPoemSound() {
-        Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getSoundManager().stop(ModSounds.endpoem_ru, SoundSource.MUSIC);
+    private void theGreat_End_1_21_1$stopEndPoemSound() {
+        theGreat_End_1_21_1$minecraft.getSoundManager().stop(ModSounds.endpoem_ru, SoundSource.MUSIC);
     }
 }

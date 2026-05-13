@@ -1,0 +1,3 @@
+{
+  "thegreatend.message.framerate_change_error": "<ProGaMEr110521> §eIt seems something prevented setting the maximum frame rate back to what it was. It was changed because the NeoForge API apparently alters the graphics pipeline in some way, causing the partialTick — which the credits scrolling speed depends on — to go through the roof. No other solution was found except capping the frame rate at 40–45 FPS. Sorry, buddy, but you'll have to revert it to how it was yourself. Regards to the NeoForge API — ProGaMEr110521"
+}
